@@ -35,7 +35,8 @@
     ]
   },
   "files": [
-    "src"
+    "src",
+    "index.js"
   ],
   "engines": {
     "node": ">=8.6"
