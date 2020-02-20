@@ -4,7 +4,7 @@
 
 This Graphile Engine plugin adds connection fields for many-to-many relations.
 
-> Requires `postgraphile@^4.3.1` or `graphile-build-pg@^4.3.1`
+> Requires `postgraphile@^4.5.0` or `graphile-build-pg@^4.5.0`
 
 Example:
 
@@ -53,6 +53,60 @@ app.use(
 );
 
 app.listen(5000);
+```
+
+## Excluding Fields
+
+To exclude certain many-to-many fields from appering in your GraphQL schema, you can use `@omit manyToMany` [smart comments](https://www.graphile.org/postgraphile/smart-comments/) on constraints and tables.
+
+Here is an example of using a smart comment on a constraint:
+
+```
+create table p.foo (
+  id serial primary key,
+  name text not null
+);
+
+create table p.bar (
+  id serial primary key,
+  name text not null
+);
+
+create table p.qux (
+  foo_id int constraint qux_foo_id_fkey references p.foo (id),
+  bar_id int constraint qux_bar_id_fkey references p.bar (id),
+  primary key (foo_id, bar_id)
+);
+
+-- `Foo` and `Bar` would normally have `barsBy...` and `foosBy...` fields,
+-- but this smart comment causes the constraint between `qux` and `bar`
+-- to be ignored, preventing the fields from being generated.
+comment on constraint qux_bar_id_fkey on p.qux is E'@omit manyToMany';
+```
+
+Here is an example of using a smart comment on a table:
+
+```
+create table p.foo (
+  id serial primary key,
+  name text not null
+);
+
+create table p.bar (
+  id serial primary key,
+  name text not null
+);
+
+create table p.corge (
+  foo_id int constraint corge_foo_id_fkey references p.foo (id),
+  bar_id int constraint corge_bar_id_fkey references p.bar (id),
+  primary key (foo_id, bar_id)
+);
+
+-- `Foo` and `Bar` would normally have `barsBy...` and `foosBy...` fields,
+-- but this smart comment causes `corge` to be excluded from consideration
+-- as a junction table, preventing the fields from being generated.
+comment on table p.corge is E'@omit manyToMany';
 ```
 
 ## Inflection
@@ -118,11 +172,11 @@ The `@manyToManyFieldName` and `@manyToManySimpleFieldName` smart comments allow
 For example, to rename the Connection field from `teamsByTeamMemberTeamId` to `teams`:
 
 ```sql
-comment on constraint team_member_team_id_fkey on p.team_member is E'@manyToManyFieldName teams';
+comment on constraint membership_team_id_fkey on p.membership is E'@manyToManyFieldName teams';
 ```
 
 To rename both the Connection and simple collection fields (assuming simple collections are enabled):
 
 ```sql
-comment on constraint team_member_team_id_fkey on p.team_member is E'@manyToManyFieldName teams\n@manyToManySimpleFieldName teamsList';
+comment on constraint membership_team_id_fkey on p.membership is E'@manyToManyFieldName teams\n@manyToManySimpleFieldName teamsList';
 ```
